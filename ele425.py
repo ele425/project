@@ -2,11 +2,13 @@ import soundfile as sf
 import matplotlib.pyplot as plt
 from scipy.fftpack import fft, fftshift
 import numpy as np
+import warnings
 
+warnings.filterwarnings("ignore") #ignore runtime division by zero from magnitude response on line 27
 
-data, samplerate = sf.read('/Users/nicknorden/Downloads/one_small_step.wav')
+data, samplerate = sf.read('one_small_step.wav')
 np_fft = np.fft.rfft(data*np.hanning(len(data)))
-d = len(np_fft)/2
+d = int(len(np_fft)/2)
 
 plt.figure(1)
 plt.title("np/hanning")
@@ -15,16 +17,17 @@ plt.plot(abs(np_fft[:(d-1)]),'r')
 
 plt.figure(2)
 
-window = np.hanning(51) #input
+window = np.hanning(51) #input M = 51
 plt.plot(window)
 plt.title("Hann window")
 
 plt.figure(3)
-#normalized over half of the number of input samples 51 => 25.5
-A = fft(window, 2048) / 25.5 #fft(array, length of fourier transform (optional))
+#fft(array, length of fourier transform (optional))
+A = fft(window, 2048) / 25.5 #normalized over half of the number of input samples 51 => 25.5
 mag = np.abs(fftshift(A))
 freq = np.linspace(-0.5, 0.5, len(A))
-response = 20 * np.log10(mag)
+response = 20 * np.log10(mag) # magnitude in decibels
+
 response = np.clip(response, -100, 100)
 plt.plot(freq, response)
 
