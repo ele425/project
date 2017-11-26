@@ -7,6 +7,9 @@ from scipy import signal
 from skimage.feature import peak_local_max
 import wave
 import pyaudio
+from scipy.ndimage.filters import maximum_filter
+from scipy.ndimage.morphology import generate_binary_structure, binary_erosion, iterate_structure
+
 
 window_size = 1024
 
@@ -112,4 +115,40 @@ def specgram_plt(spec, freqs, t):
     ax = plt.gca()
     ax.set_xlim([0, extent[1]])
     ax.set_ylim([freqs[0], freqs[-1]])
+    plt.show()
+
+def peaks_v2(image):
+    image = 10 * np.log10(image)
+    #flip the array since imshow (0,0) is upper left
+    #image = np.flipud(image)
+    image[image == -np.inf] = 0
+    neighborhood = generate_binary_structure(2,1)
+    #apply the local maximum filter; all pixel of maximal value
+    #in their neighborhood are set to 1
+    neighborhood = iterate_structure(neighborhood,20).astype(int)
+    local_max = maximum_filter(image, footprint=neighborhood ) == image
+    background = (image == 0)
+    eroded_background = binary_erosion(background, structure=neighborhood, border_value=1)
+    detected_peaks = local_max ^ eroded_background
+    filter_peaks_v2(detected_peaks, image)
+
+def filter_peaks_v2(detected_peaks, image):
+    # threshold for amplitudes
+    AMPLITUDE_THRESHOLD = 20
+
+    # get amplitudes of peaks
+    amplitudes = image[detected_peaks].flatten()
+    y, x = detected_peaks.astype(int).nonzero()
+
+    #zip tuples
+    all_peaks = zip(x, y, amplitudes)
+    filtered_peaks = [p for p in all_peaks if p[2] > AMPLITUDE_THRESHOLD]
+    fingerprint = ( [p[0] for p in filtered_peaks],
+                    [p[1] for p in filtered_peaks])
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+
+    x, y = fingerprint[0], fingerprint[1]
+    ax1.pcolor(image, cmap="hot")
+    ax1.scatter(x, y, c= 'blue')
     plt.show()
