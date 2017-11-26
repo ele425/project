@@ -9,7 +9,8 @@ import wave
 import pyaudio
 from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion, iterate_structure
-
+import hashlib
+from operator import itemgetter
 
 window_size = 1024
 
@@ -49,16 +50,19 @@ def wav_reader(wav_file):
     #sample_array = sample_array[:,0]
     return rate, sample_array
 
-def locate_peaks(sample_array, rate, min_freq = 0, max_freq = 20000, min_distance = 20, threshold_abs = 15):
+def locate_peaks(sample_array, rate, min_freq = 0, max_freq = 20000, min_distance = 23, threshold_abs = 20):
     spec, freqs, t = specgram(sample_array, NFFT= 1024, Fs=rate, noverlap=1024*0.5, pad_to = None)
     spec[spec == 0] = 1e-6
     Z_cut, freqs_cut = resize_spec(min_freq, max_freq, spec, freqs)
     coordinates = peak_local_max(Z_cut, min_distance, threshold_abs, indices = True)
     '''
-    updated peaks_cord now is a list of filtered peaks in the form (time,frequency)
+    updated peaks_coord now is a list of filtered peaks in the form (time,frequency)
+    then peaks_coord is sorted in time and returned in sorted_peak_coord "key = lambda" allows
+    us to use the object's indices as a key for sorting, sorted by default is assending order
     '''
     peaks_coord = list(zip(t[coordinates[:,1]],freqs[coordinates[:,0]]))
-    return coordinates, spec, freqs, t, Z_cut, peaks_coord
+    sorted_peak_coord = sorted(peaks_coord, key = lambda peaks: peaks[0])
+    return coordinates, spec, freqs, t, Z_cut, sorted_peak_coord
 
 def resize_spec(min_freq, max_freq, spec, freqs):
     #returns magnitude of freq values between 0-15KHz
@@ -74,7 +78,7 @@ def plot_peaks(spec, freqs, t, coord):
     Z[Z == -np.inf] = 0
     fig = plt.figure(figsize=(10, 8), facecolor='white')
     #spec
-    plt.imshow(Z, cmap = "hot")
+    plt.imshow(Z, interpolation = 'nearest', cmap = "hot")
     #peaks
     #plt.scatter(229, 438, c = 'r', s = 90)
     plt.scatter(coord[:, 1], coord[:, 0])
@@ -114,7 +118,7 @@ def specgram_plt(spec, freqs, t):
     extent = 0, np.amax(t), freqs[0], freqs[-1]
     Z = 10.0 * np.log10(spec)
     Z = np.flipud(Z)
-    plt.imshow(Z, cmap='hot', extent=extent)
+    plt.imshow(Z, interpolation = 'nearest',cmap = 'hot', extent=extent)
     plt.xlabel('Time bin')
     plt.ylabel('Frequency [Hz]')
     plt.title('song')
@@ -123,6 +127,27 @@ def specgram_plt(spec, freqs, t):
     ax.set_xlim([0, extent[1]])
     ax.set_ylim([freqs[0], freqs[-1]])
     plt.show()
+'''
+toook this shit from dan needed .encode('utf-8') to run
+'''
+def generate_hashes(sorted_peaks):
+    fingerprint_pairs = 5
+    fingerprint_time_delta = .1
+    fingerprints = []
+    for i, peak in enumerate(sorted_peaks):
+    # get all peaks within `fingerprint_pairs` of the current peak
+        potential_pairs = sorted_peaks[i+1:i+fingerprint_pairs]
+    # get rid of the ones that are too far away in time
+        potential_pairs = [p for p in potential_pairs if p[0] - peak[0] < fingerprint_time_delta]
+    # create the (f1, f2, time_delta) tuples
+        prints = [(peak[1], p[1], (p[0] - peak[0])) for p in potential_pairs]
+        fingerprints.extend(prints)
+    hashes = []
+    for fprint in fingerprints:
+        h = hashlib.md5()
+        h.update('{0}|{1}|{2}'.format(fprint[0], fprint[1], fprint[2]).encode('utf-8'))
+        hashes.append(h.hexdigest())
+    return hashes
 
 
 '''
