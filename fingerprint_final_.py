@@ -6,12 +6,11 @@ rate, sample_array = fp.wav_reader('pyaudio_recording_final')
 coordinates, spec, freqs, t, Z_cut, sorted_peak_coord = fp.locate_peaks(sample_array,rate)
 
 #fp.specgram_plt(spec,freqs,t)
-#fp.plot_peaks(spec, freqs, t, coordinates)
-
+fp.plot_peaks(spec, freqs, t, coordinates)
 hashes = fp.generate_hashes(sorted_peak_coord)
-print(hashes[:2])
+print(hashes[:5])
 
-
+#'d5adefb3aca94a7d8ede072ca08b83b3'
 '''
 two different ways to find peaks but apparently in the background the peak_local_max function goes through the exact
 same process (i.e binary mask, dialation, background erosion) with enough tweaking they can find the same peaks.

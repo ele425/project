@@ -50,7 +50,7 @@ def wav_reader(wav_file):
     #sample_array = sample_array[:,0]
     return rate, sample_array
 
-def locate_peaks(sample_array, rate, min_freq = 0, max_freq = 20000, min_distance = 23, threshold_abs = 20):
+def locate_peaks(sample_array, rate, min_freq = 0, max_freq = 20000, min_distance = 20, threshold_abs = 20):
     spec, freqs, t = specgram(sample_array, NFFT= 1024, Fs=rate, noverlap=1024*0.5, pad_to = None)
     spec[spec == 0] = 1e-6
     Z_cut, freqs_cut = resize_spec(min_freq, max_freq, spec, freqs)
@@ -74,26 +74,20 @@ def resize_spec(min_freq, max_freq, spec, freqs):
 
 def plot_peaks(spec, freqs, t, coord):
     Z = 10.0 * np.log10(spec)
-    Z = np.flipud(Z)
     Z[Z == -np.inf] = 0
     fig = plt.figure(figsize=(10, 8), facecolor='white')
-    #spec
-    plt.imshow(Z, interpolation = 'nearest', cmap = "hot")
-    #peaks
-    #plt.scatter(229, 438, c = 'r', s = 90)
-    plt.scatter(coord[:, 1], coord[:, 0])
-    #get current axis plots over current axis
-    ax = plt.gca()
-    #axis settings
+    plt.imshow(Z, origin = 'lower', interpolation = 'nearest', cmap = "hot")
     plt.xlabel('Time bin')
     plt.ylabel('Frequency')
     plt.title('peaks', fontsize=18)
     plt.axis('auto')
-    ax.set_xlim([0, len(t)])
-    ax.set_ylim([len(freqs), 0])
-    ax.xaxis.set_ticklabels([])
-    ax.yaxis.set_ticklabels([])
+    plt.xlim([0, len(t)])
+    plt.ylim([0,len(freqs)])
+    #plt.xticks([])
+    #plt.yticks([])
+    plt.scatter(coord[:, 1], np.flipud(coord[:, 0]))
     plt.show()
+
 '''
 just an example with some explination of what is is returning
 and how it is doing it
@@ -117,8 +111,8 @@ def specgram_plt(spec, freqs, t):
     fig1 = plt.figure(figsize=(10, 8), facecolor='white')
     extent = 0, np.amax(t), freqs[0], freqs[-1]
     Z = 10.0 * np.log10(spec)
-    Z = np.flipud(Z)
-    plt.imshow(Z, interpolation = 'nearest',cmap = 'hot', extent=extent)
+
+    plt.imshow(Z, origin = 'lower',interpolation = 'nearest',cmap = 'hot', extent=extent)
     plt.xlabel('Time bin')
     plt.ylabel('Frequency [Hz]')
     plt.title('song')
@@ -166,25 +160,37 @@ def peaks_v2(image):
     background = (image == 0)
     eroded_background = binary_erosion(background, structure=neighborhood, border_value=1)
     detected_peaks = local_max ^ eroded_background
-    filter_peaks_v2(detected_peaks, image)
+    fingerprints = filter_peaks_v2(detected_peaks, image)
+    return fingerprints
 
 def filter_peaks_v2(detected_peaks, image):
     # threshold for amplitudes
     AMPLITUDE_THRESHOLD = 20
-
     # get amplitudes of peaks
     amplitudes = image[detected_peaks].flatten()
     y, x = detected_peaks.astype(int).nonzero()
-
     #zip tuples
     all_peaks = zip(x, y, amplitudes)
     filtered_peaks = [p for p in all_peaks if p[2] > AMPLITUDE_THRESHOLD]
     fingerprint = ( [p[0] for p in filtered_peaks],
                     [p[1] for p in filtered_peaks])
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
+    return fingerprint
 
+def plt_fingerprint_v2(image, fingerprint, t, freqs):
+    Z = 10.0 * np.log10(image)
+    Z = np.flipud(Z)
+    Z[Z == -np.inf] = 0
+    fig = plt.figure(figsize=(10, 8), facecolor='white')
+    plt.imshow(Z, interpolation = 'nearest', cmap = "hot")
     x, y = fingerprint[0], fingerprint[1]
-    ax1.pcolor(image, cmap="hot")
-    ax1.scatter(x, y, c= 'blue')
+    plt.scatter(x, y, c= 'blue')
+    ax = plt.gca()
+    plt.xlabel('Time bin')
+    plt.ylabel('Frequency')
+    plt.title('peaks', fontsize=18)
+    plt.axis('auto')
+    ax.set_xlim([0, len(t)])
+    ax.set_ylim([len(freqs), 0])
+    ax.xaxis.set_ticklabels([])
+    ax.yaxis.set_ticklabels([])
     plt.show()
