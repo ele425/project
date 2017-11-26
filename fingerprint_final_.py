@@ -22,7 +22,7 @@ same process (i.e binary mask, dialation, background erosion) with enough tweaki
 However, peak_local_max (fp.locate_peaks) returns coordinates of the image in an array of pixels (x,y) not frequency
 and time. Not sure if that matters since the pixel (x,y) should be the same as spec (freq,time).
 '''
-fp.show_peaks(spec, freqs, t, coordinates)
+fp.plot_peaks(spec, freqs, t, coordinates)
 #fp.peaks_v2(spec)
 
 

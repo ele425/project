@@ -49,26 +49,22 @@ def wav_reader(wav_file):
     #sample_array = sample_array[:,0]
     return rate, sample_array
 
-def locate_peaks(sample_array, rate, min_freq = 0, max_freq = 20000, min_distance = 20, threshold_abs = 20):
+def locate_peaks(sample_array, rate, min_freq = 0, max_freq = 20000, min_distance = 20, threshold_abs = 15):
     spec, freqs, t = specgram(sample_array, NFFT= 1024, Fs=rate, noverlap=1024*0.5, pad_to = None)
     spec[spec == 0] = 1e-6
-    Z_cut, freqs_cut = cut_specgram(min_freq, max_freq, spec, freqs)
+    Z_cut, freqs_cut = resize_spec(min_freq, max_freq, spec, freqs)
     coordinates = peak_local_max(Z_cut, min_distance, threshold_abs)
     return coordinates, spec, freqs, t, Z_cut
 
-def cut_specgram(min_freq, max_freq, spec, freqs):
-    #returns magnitude of spectrum values between 0-15KHz
-    spec_cut = spec[(freqs >= min_freq) & (freqs <= max_freq)]
-    #returns frequency between 0-15KHz
+def resize_spec(min_freq, max_freq, spec, freqs):
+    #returns magnitude of freq values between 0-15KHz
+    #spec(freq,time)
+    Z_cut = spec[(freqs >= min_freq) & (freqs <= max_freq)]
+    #change the length of both
     freqs_cut = freqs[(freqs >= min_freq) & (freqs <= max_freq)]
-    #create a box around the magnitudes
-    Z_cut = 10 * np.log10(spec_cut)
-    #flip the array since imshow (0,0) is upper left
-    Z_cut = np.flipud(Z_cut)
-    Z_cut[Z_cut == -np.inf] = 0
     return Z_cut, freqs_cut
 
-def show_peaks(spec, freqs, t, coord):
+def plot_peaks(spec, freqs, t, coord):
     Z = 10.0 * np.log10(spec)
     Z = np.flipud(Z)
     Z[Z == -np.inf] = 0
@@ -89,7 +85,10 @@ def show_peaks(spec, freqs, t, coord):
     ax.xaxis.set_ticklabels([])
     ax.yaxis.set_ticklabels([])
     plt.show()
-
+'''
+just an example with some explination of what is is returning
+and how it is doing it
+'''
 def example_peak_local_max():
         #Return coordinates of peaks in an image
         #Peaks are the local maxima in a region of 2 * min_distance + 1
@@ -102,6 +101,9 @@ def example_peak_local_max():
     print('with min_distance = 1: ', peak_local_max(im, min_distance = 1))
     print('with min_distance = 2: ', peak_local_max(im,min_distance = 2))
 
+'''
+might want to show the specgram
+'''
 def specgram_plt(spec, freqs, t):
     fig1 = plt.figure(figsize=(10, 8), facecolor='white')
     extent = 0, np.amax(t), freqs[0], freqs[-1]
@@ -117,6 +119,10 @@ def specgram_plt(spec, freqs, t):
     ax.set_ylim([freqs[0], freqs[-1]])
     plt.show()
 
+
+'''
+probably wont need these functions
+'''
 def peaks_v2(image):
     image = 10 * np.log10(image)
     #flip the array since imshow (0,0) is upper left
