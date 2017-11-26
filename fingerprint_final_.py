@@ -1,4 +1,5 @@
 import fingerprint_final as fp
+import numpy as np
 
 
 '''
@@ -9,7 +10,7 @@ has to be the same sample/chunk length
 #fp.recorder()
 
 rate, sample_array = fp.wav_reader('pyaudio_recording_final')
-coordinates, spec, freqs, t, Z_cut = fp.locate_peaks(sample_array,rate)
+coordinates, spec, freqs, t, Z_cut, peaks_coord = fp.locate_peaks(sample_array,rate)
 
 '''
 shows spectrogram of input
@@ -30,3 +31,7 @@ fp.plot_peaks(spec, freqs, t, coordinates)
 example of how peak_local_max works for different min_distances
 '''
 #fp.example_peak_local_max()
+#print(peaks_coord)
+#choose any peak from list and cross check with pixel
+#print(np.where(t == 2.670294784580499),np.where(freqs == 18863.0859375))
+#then add to plt.scatter to cross check

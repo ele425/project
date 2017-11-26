@@ -53,8 +53,12 @@ def locate_peaks(sample_array, rate, min_freq = 0, max_freq = 20000, min_distanc
     spec, freqs, t = specgram(sample_array, NFFT= 1024, Fs=rate, noverlap=1024*0.5, pad_to = None)
     spec[spec == 0] = 1e-6
     Z_cut, freqs_cut = resize_spec(min_freq, max_freq, spec, freqs)
-    coordinates = peak_local_max(Z_cut, min_distance, threshold_abs)
-    return coordinates, spec, freqs, t, Z_cut
+    coordinates = peak_local_max(Z_cut, min_distance, threshold_abs, indices = True)
+    '''
+    updated peaks_cord now is a list of filtered peaks in the form (time,frequency)
+    '''
+    peaks_coord = list(zip(t[coordinates[:,1]],freqs[coordinates[:,0]]))
+    return coordinates, spec, freqs, t, Z_cut, peaks_coord
 
 def resize_spec(min_freq, max_freq, spec, freqs):
     #returns magnitude of freq values between 0-15KHz
@@ -72,6 +76,7 @@ def plot_peaks(spec, freqs, t, coord):
     #spec
     plt.imshow(Z, cmap = "hot")
     #peaks
+    #plt.scatter(229, 438, c = 'r', s = 90)
     plt.scatter(coord[:, 1], coord[:, 0])
     #get current axis plots over current axis
     ax = plt.gca()
