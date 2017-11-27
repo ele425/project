@@ -1,14 +1,20 @@
 import fingerprint_final as fp
+import hashPeaks as hp
 
 #fp.recorder()
 
-rate, sample_array = fp.wav_reader('pyaudio_recording_final')
+rate, sample_array = fp.wav_reader('one_small_step')
 coordinates, spec, freqs, t, Z_cut, sorted_peak_coord = fp.locate_peaks(sample_array,rate)
 
 #fp.specgram_plt(spec,freqs,t)
 fp.plot_peaks(spec, freqs, t, coordinates)
-hashes = fp.generate_hashes(sorted_peak_coord)
+hashes = hp.hash_fingerprints(sorted_peak_coord, 5)
 print(hashes[:5])
+hp.write_fingerprint("one small step small", hashes)
+collisions = hp.find_collisions("one small step small", hashes)
+print("Number of collisions: {0}".format(collisions))
+
+
 
 #'d5adefb3aca94a7d8ede072ca08b83b3'
 '''
